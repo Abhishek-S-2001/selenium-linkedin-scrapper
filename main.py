@@ -1,51 +1,93 @@
-import pandas as pd
-from selenium import webdriver
-from tempfile import mkdtemp
-from selenium.webdriver.common.by import By
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
+from imports import *
+
+from src.data_model import CompanyData
+from src.get_driver import get_chrome_driver
+from src.popup import close_popup
+from src.scrap_company import scrap_company_data
+from src.scrap_posts import scrap_company_posts
+
+
+def scrape_thread(url, result_queue, number_of_posts):
+    """
+    Function to be run in each thread for scraping data
+    """
+    try:
+        driver = get_chrome_driver(url)
+        close_popup(driver)
+        
+        company_data = CompanyData()
+        scrap_company_data(driver, company_data)
+        posts = scrap_company_posts(driver, number_of_posts)
+        company_data.posts = posts
+        
+        result_queue.put(company_data)
+        driver.quit()
+    except Exception as e:
+        logging.error(f"Error in thread: {e}")
+        result_queue.put(None)
 
 
 def handler(event=None, context=None):
-    # Set up Chrome options
-    options = webdriver.ChromeOptions()
-    service = webdriver.ChromeService("/opt/chromedriver")
 
-    options.binary_location = '/opt/chrome/chrome'
-    options.add_argument("--headless=new")
-    options.add_argument('--no-sandbox')
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1280x1696")
-    options.add_argument("--single-process")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-dev-tools")
-    options.add_argument("--no-zygote")
-    options.add_argument(f"--user-data-dir={mkdtemp()}")
-    options.add_argument(f"--data-path={mkdtemp()}")
-    options.add_argument(f"--disk-cache-dir={mkdtemp()}")
-    options.add_argument("--remote-debugging-port=9222")
+    urls = [
+    "https://www.linkedin.com/company/hcltech?trk=companies_directory",
+    # "https://www.linkedin.com/company/tata-consultancy-services?trk=companies_directory",
+    # "https://www.linkedin.com/company/infosys?trk=companies_directory",
+    # "https://www.linkedin.com/company/wipro?trk=companies_directory",
+    # "https://www.linkedin.com/company/capgemini?trk=companies_directory",
+    # "https://www.linkedin.com/company/genpact?trk=companies_directory",
+    # "https://in.linkedin.com/company/credapp",
+    # "https://in.linkedin.com/company/zeptonow",
+    # "https://in.linkedin.com/company/datazipio",
+    # "https://in.linkedin.com/company/zintlr"
+    ]
+    number_of_posts = 50
 
-    # Initialize the WebDriver
-    chrome = webdriver.Chrome(options=options, service=service)
+    start_time = time.time()
+    logging.info("Starting multi-threaded scraping with urls")
+    
+    # Create a queue to store results
+    result_queue = queue.Queue()
+    # Create and start 10 threads
+    threads = []
+    
+    for i in range(len(urls)):
+        thread = threading.Thread(target=scrape_thread, args=(urls[i], result_queue, number_of_posts))
+        threads.append(thread)
+        thread.start()
+        time.sleep(2)  # Small delay between starting threads
+    
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+    
+    # Collect all results
+    all_results = []
+    while not result_queue.empty():
+        result = result_queue.get()
+        if result is not None:
+            all_results.append(asdict(result))
+    
+    # Convert to DataFrame
+    if all_results:
+        company_df = pd.DataFrame(all_results)
+        print(f"Successfully collected data from {len(all_results)} threads")
+    else:
+        print("No successful results collected")
 
-    # Open the webpage
-    chrome.get("https://example.com/")
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Code executed in {elapsed_time:.2f} seconds.")
 
-    # Extract data using Selenium
-    page_text = chrome.find_element(by=By.XPATH, value="//html").text
-
-    # Example: Process data into a Pandas DataFrame
-    # Using page_text to populate one of the columns
-    sample_data = {
-        "Column1": ["Row1_Data1", "Row2_Data1", "Row3_Data1"],
-        "PageText": [page_text] * 3  # Adding the same page_text to all rows
+    # Convert DataFrame to a dictionary
+    response = company_df.to_dict(orient='records')
+    
+    return {
+        "statusCode": 200,
+        "body": response
     }
-
-    # Create a Pandas DataFrame
-    df = pd.DataFrame(sample_data)
-
-    # Print the DataFrame to debug (or save to file/database)
-    print(df)
-
-    # Quit the WebDriver
-    chrome.quit()
-
-    return df.to_dict()  # Example return: Convert DataFrame to dictionary for Lambda response

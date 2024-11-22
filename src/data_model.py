@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from imports import *
 
 @dataclass
 class Post:

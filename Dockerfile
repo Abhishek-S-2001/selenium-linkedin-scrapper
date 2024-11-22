@@ -28,5 +28,8 @@ COPY --from=build /opt/chromedriver-linux64 /opt/
 # Copy the main Lambda handler code
 COPY main.py ./
 
+# Copy the src folder containing additional Python files
+COPY src/ ./src/
+
 # Set the Lambda entry point
 CMD [ "main.handler" ]
