@@ -16,3 +16,7 @@ Op should be like this-
 "Example Domain\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\nMore information..."
 
 # Select x64 while creating lambda functions 
+
+
+If base image is working check for latest:
+https://github.com/umihico/docker-selenium-lambda
