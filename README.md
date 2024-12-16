@@ -1,5 +1,6 @@
 # LinkedIn Scraper using Selenium and AWS Lambda
 
+
 ## Overview
 This project is a scalable LinkedIn scraper designed to extract information from LinkedIn company pages and posts. It uses **Python** and **Selenium** for data extraction, **Docker** for containerized development and testing, and **AWS Lambda** for serverless hosting. Data is stored in **AWS S3** for secure and efficient processing.
 
