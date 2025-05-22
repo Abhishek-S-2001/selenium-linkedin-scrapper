@@ -14,7 +14,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
 # Read release note content
-docx_file_path = "Website_Release_Note.docx"
+docx_file_path = "Release_Notes/Website_Release_Note.docx"
 content = read_docx(docx_file_path)
 
 # Prepare email
