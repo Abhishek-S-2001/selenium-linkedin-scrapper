@@ -16,3 +16,5 @@ Op should be like this-
 
 # Select x64 while creating lambda functions 
 If base image is not working check for latest: https://github.com/umihico/docker-selenium-lambda
+
+This is Test for Release Note Email.
